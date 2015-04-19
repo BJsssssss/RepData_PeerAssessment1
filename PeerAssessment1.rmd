@@ -1,0 +1,142 @@
+---
+title: "Reprodu
+cible Research Peer Assessment 1"
+author: "Bijoy Joseph"
+date: "Sunday, April 19, 2015"
+output: html_document
+---
+
+
+
+fileUrl <-"https://d396qusza40orc.cloudfront.net/repdata%2Fdata%2Factivity.zip"
+download.file(fileUrl, "./repdata_data_activity.zip")
+
+```{r}
+stepsData <- read.csv(file="activity.csv" ,header=TRUE, sep=",")  
+head(stepsData)
+```
+
+Total number of steps per day using aggregrate() function
+
+```{r}
+stepsDaily <- aggregate(stepsData$steps, list(stepsData$date), sum)
+```
+
+#Extract and barplot the steps daily by date
+
+```{r}
+ with(stepsDaily, {
+   par(oma=c(2,0,0,0), mar=c(7,7,3,0), mgp=c(6,1,0), las=2)
+   barplot(height=stepsDaily$x, main="Barplot of total steps per day",
+             xlab="Date", ylab="Total steps",names.arg=stepsDaily$Group.1,space=c(0))
+ })
+```
+
+Mean
+
+```{r}
+stepsDailyMean <- mean(stepsDaily$x, na.rm=TRUE)
+```
+
+Median
+```{r}
+stepsDailyMedian <- median(stepsDaily$x, na.rm=TRUE)
+```
+
+Part II
+Make a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all days (y-axis)
+Which 5-minute interval, on average across all the days in the dataset, contains the maximum number of steps?
+
+```{r}
+stepsInterval <- aggregate(data=stepsData, steps~interval, FUN=mean, na.action=na.omit)
+colnames(stepsInterval) <- c("Interval", "AvgStepsInDay")
+with(stepsInterval, {plot(x=Interval,y=AvgStepsInDay,
+     type="l", main="Plot of average steps against time interval",
+      xlab="5-minute interval",ylab="Average steps" )
+})
+```
+
+Part III
+Find 5-minute interval with the maximum number of steps
+```{r}
+maxStepsInterval <- stepsInterval[stepsInterval$AvgStepsInDay==max(stepsInterval$AvgStepsInDay),]
+```
+
+Max interval is from `r maxStepsInterval` to `r maxStepsInterval+5` minutes
+
+Part IV
+
+Imputing missing values
+
+    Note that there are a number of days/intervals where there are missing values (coded as NA). The presence of missing days may introduce bias into some calculations or summaries of the data.
+
+        Calculate and report the total number of missing values in the dataset (i.e. the total number of rows with NAs)
+        Devise a strategy for filling in all of the missing values in the dataset. The strategy does not need to be sophisticated. For example, you could use the mean/median for that day, or the mean for that 5-minute interval, etc.
+        Create a new dataset that is equal to the original dataset but with the missing data filled in.
+        Make a histogram of the total number of steps taken each day and Calculate and report the mean and median total number of steps taken per day. Do these values differ from the estimates from the first part of the assignment? What is the impact of imputing missing data on the estimates of the total daily number of steps?
+
+Number of rows with NA
+
+```{r}
+numNA <- nrow(subset(stepsData, is.na(stepsData$steps)))
+```
+```{r}
+stepValues <- data.frame(stepsData$steps)
+stepValues[is.na(stepValues),] <- ceiling(tapply(X=stepsData$steps,INDEX=stepsData$interval,FUN=mean,na.rm=TRUE))
+newstepsData <- cbind(stepValues, stepsData[,2:3])
+colnames(newstepsData) <- c("Steps", "Date", "Interval")
+```
+
+The total number of steps taken each day is generated using this new dataset.
+
+```{r}
+newstepSum <- aggregate(newstepsData$Steps, list(newstepsData$Date), sum)
+```
+
+Plot of the same
+
+```{r}
+with(newstepSum, {
+    par(oma=c(2,0,0,0), mar=c(7,7,3,0), mgp=c(6,6,0), las=2)
+    barplot(height=newstepsData$Steps,
+      main="Plot of Total Steps taken per Day",
+      xlab="newstepsData$Date",ylab="Steps per Day",names.arg=newstepsData$Date,space=c(0)
+    )
+})
+```
+
+```{r}
+colnames(newstepSum) <- c( "Date", "Steps")
+```
+
+
+    Mean
+```{r}
+    newstepMean <- mean(newstepSum$Steps)
+```
+
+
+    Median
+```{r}
+    newstepMedian <- median(newstepSum$Steps)
+```
+
+
+Therefore adding the missing values to the original ctivity data causes both mean and median values to increase
+as expected.
+
+    Mean:
+
+    `r stepsDailyMean` to `r newstepMean`
+
+    Median:
+
+    `r stepsDailyMean` to `r newstepMedian`
+
+
+Are there differences in activity patterns between weekdays and weekends?
+
+    For this part the weekdays() function may be of some help here. Use the dataset with the filled-in missing values for this part.
+
+        Create a new factor variable in the dataset with two levels - "weekday" and "weekend" indicating whether a given date is a weekday or weekend day.
+        Make a panel plot containing a time series plot (i.e. type = "l") of the 5-minute interval (x-axis) and the average number of steps taken, averaged across all weekday days or weekend days (y-axis). The plot should look something like the following, which was creating using simulated data:
